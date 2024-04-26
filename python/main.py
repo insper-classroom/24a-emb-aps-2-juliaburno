@@ -1,7 +1,8 @@
 import serial
 import uinput
 
-ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+ser = serial.Serial('/dev/ttyACM0', 115200)
+
 
 # Create new mouse device
 device = uinput.Device([
@@ -21,8 +22,6 @@ keyboard = uinput.Device([
     uinput.KEY_LEFTCTRL, #dive
     uinput.KEY_LEFTSHIFT, #grab
 ])
-
-
 
 
 def parse_data(data):
@@ -51,6 +50,8 @@ try:
 
         # Read 5 bytes from UART
         data = ser.read(4)
+        if len(data) < 4:
+            continue
         print(f"Received data: {data}")
         print(f"Type: {data[0]}")
 
@@ -63,7 +64,7 @@ try:
 
         elif data[0] == 1:
             print("Keyboard data")
-            key = data[1].decode('utf-8')
+            key = data[1]
             status = data[2]
             print(f"Key: {key}")
             print(f"Status: {status}")

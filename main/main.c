@@ -67,7 +67,7 @@ void write_package(command data) {
         uart_putc_raw(uart0, data.type);
         uart_putc_raw(uart0, data.ID);
         uart_putc_raw(uart0, data.status);
-        uart_putc_raw(uart0, -1);
+        uart_putc_raw(uart0, 1);
         uart_putc_raw(uart0, -1);
         return;
     }
