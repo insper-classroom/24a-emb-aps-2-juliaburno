@@ -1,7 +1,8 @@
 import serial
 import uinput
 
-ser = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
+# ser = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
+ser = serial.Serial('/dev/rfcomm0', 115200, timeout=10)
 ser.flushInput()
 
 
