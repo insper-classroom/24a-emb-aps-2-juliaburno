@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "hardware/adc.h"
 
-#include "hc06.h"
+#include "hc05.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -21,7 +21,6 @@
 #define BTN_B 13
 #define BTN_G 14
 #define BTN_Y 15
-/* #define BTN_TEST 17 */
 #define JS_L 10
 #define JS_U 11
 #define JS_R 16
@@ -29,52 +28,72 @@
 #define ADC_X 26
 #define ADC_Y 27
 
-typedef struct {
-    int type; // 0 - adc, 1 - button
-    int axis; // 0 - y, 1 - x
-    int val; // value
-    char ID; // button ID
-    int status; // button status
-} command;
 
-void hc06_task(void *p) {
-    uart_init(HC06_UART_ID, HC06_BAUD_RATE);
-    gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART);
-    hc06_init("aps2_julia_burno", "1234");
+void hc05_task(void *p) {
+    uart_init(hc05_UART_ID, hc05_BAUD_RATE);
+    gpio_set_function(hc05_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(hc05_RX_PIN, GPIO_FUNC_UART);
+    hc05_init("JuliaBurno", "1234");
+    gpio_init(hc05_PIN);
+    gpio_set_dir(hc05_PIN, GPIO_IN);
 
-/*     while (true) {
-        uart_puts(HC06_UART_ID, "OLAAA ");
-        vTaskDelay(pdMS_TO_TICKS(100));
-    } */
+    while(true){
+        if (gpio_get(hc05_PIN) == 1) {
+            //Ascender LED
+            break;
+        }
+    }
 }
 
+void uart_task(void *p) {
+    btn_init();
+    adc_t adc;
+    btn_t btn;
 
-void write_package(command data) {
-    if (data.type == 0) { // adc
-        int val = data.val;
-        int msb = val >> 8;
-        int lsb = val & 0xFF ;
+    while (1) {
+        if (xQueueReceive(xQueueAdc, &adc, portMAX_DELAY) == pdTRUE) {
 
-        uart_putc_raw(uart0, data.type);
-        uart_putc_raw(uart0, data.axis);
-        uart_putc_raw(uart0, lsb);
-        uart_putc_raw(uart0, msb);
-        uart_putc_raw(uart0, -1);
-        return;
-    }
-    else if (data.type == 1) { // button
-        uart_putc_raw(uart0, data.type);
-        uart_putc_raw(uart0, data.ID);
-        uart_putc_raw(uart0, data.status);
-        uart_putc_raw(uart0, 1);
-        uart_putc_raw(uart0, -1);
-        return;
+            int val = adc.val;
+            int msb = val >> 8;
+            int lsb = val & 0xFF ;
+
+            /*          uart_putc_raw(hc05_UART_ID, 0);
+            uart_putc_raw(hc05_UART_ID, adc.axis);
+            uart_putc_raw(hc05_UART_ID, lsb);
+            uart_putc_raw(hc05_UART_ID, msb);
+            uart_putc_raw(hc05_UART_ID, -1); */
+
+            uart_putc_raw(uart0, 0);
+            uart_putc_raw(uart0, adc.axis);
+            uart_putc_raw(uart0, lsb);
+            uart_putc_raw(uart0, msb);
+            uart_putc_raw(uart0, -1);
+        }
+        if(xQueueReceive(xQueueBtn, &btn, portMAX_DELAY) == pdTRUE){
+
+
+            /*          uart_putc_raw(hc05_UART_ID, 0);
+            uart_putc_raw(hc05_UART_ID, data.axis);
+            uart_putc_raw(hc05_UART_ID, lsb);
+            uart_putc_raw(hc05_UART_ID, msb);
+            uart_putc_raw(hc05_UART_ID, -1); */
+
+            uart_putc_raw(uart0, 1);
+            uart_putc_raw(uart0, btn.ID);
+            uart_putc_raw(uart0, btn.status);
+            uart_putc_raw(uart0, 0);
+            uart_putc_raw(uart0, -1); 
+        }
     }
 }
 
 
 /* BUTTON RELATED */
+typedef struct btn{
+
+    char ID; // button ID
+    int status; // button status
+} btn_t;
 
 void btn_init(){
     gpio_init(BTN_R);
@@ -114,8 +133,7 @@ QueueHandle_t xQueueBtn;
 
 
 void btn_callback(uint gpio, uint32_t events) {
-    command btn;
-    btn.type=1;
+    btn_t btn;
     if (events == 0x4)  btn.status=1;
     else if (events == 0x8) btn.status=0; 
 
@@ -148,86 +166,72 @@ void btn_callback(uint gpio, uint32_t events) {
     xQueueSendFromISR(xQueueBtn, &btn, 0);
 }
 
-void btn_task(void *p){
-    btn_init();
-    //printf("BTN_INIT");
-
-    command btn;
-    while (1){
-        if (xQueueReceive(xQueueBtn, &btn,pdMS_TO_TICKS(100))) {
-            //printf("btn: %d %s\n",btn.status, btn.ID);
-            write_package(btn); 
-            vTaskDelay(pdMS_TO_TICKS(1));
-        }
-    }
-}
-
-
-
 /* ADC RELATED */
+
+typedef struct adc{
+    int axis;
+    int val;
+}adc_t;
 
 QueueHandle_t xQueueAdc;
 
 #define deadZone 150
 
-
-void adc_x_task(void *p) {
-    command data;
-    data.type = 0;
+void adc_task(void *p){
     adc_init();
-    adc_gpio_init(26);
+    adc_gpio_init(ADC_X); // X
 
+    adc_init();
+    adc_gpio_init(ADC_Y); //Y
+
+    int zone_limit = 80;
+    int mouse_speed = 20;
+    
     while (1) {
+        //X
         adc_select_input(0); // Select ADC input 0 (GPIO26)
-        float result = adc_read();
-
-        result = result - 2048;
-        result = result / 8;
-
-        if (abs(result) < deadZone) {
-            result = 0;
+        int x = adc_read();
+        //printf("X: %d V\n", x);
+        //Calcula a deadzone
+        x = ((x-2047)/20);
+        if (x <=zone_limit && x >= -1*(zone_limit)) {
+            x = 0;
         }
+        if (x > 0) {
+            x = mouse_speed;
+        }
+        if (x < 0) {
+            x = -mouse_speed;
+        }
+        struct adc adc_data_x = {0,(int)x};
+        // printf("X: %d\n", x); // Debug
+        if (x != 0)
+            xQueueSend(xQueueAdc, &adc_data_x, 1);
+        
+        //Y
+        adc_select_input(1); // Select ADC input 1 (GPIO27s)
+        int y = adc_read();
+        //printf("Y: %d V\n", y);
+        //Calcula a deadzone
+        y = ((y-2047)/20);
+        if (y <=zone_limit && y >= -1*(zone_limit)) {
+            y = 0;
+        }
+        if (y > 0) {
+            y = mouse_speed;
+        }
+        if (y < 0) {
+            y = -mouse_speed;
+        }
+        struct adc adc_data_y = {1,(int)y};
+        // printf("Y: %d\n", y); // Debug
 
-        data.val = result;
-        data.axis = 1;
-        xQueueSend(xQueueAdc, &data, portMAX_DELAY);
+        if (y != 0)
+            xQueueSend(xQueueAdc, &adc_data_y, 1);
+
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
-
-void adc_y_task(void *p) {
-    command data;
-    data.type = 0;
-    adc_init();
-    adc_gpio_init(27);
-
-    while (1) {
-        adc_select_input(1); // Select ADC input 1 (GPIO27)
-        float result = adc_read();
-
-        result = result - 2048;
-        result = result / 8;
-
-        if (abs(result) < deadZone) {
-            result = 0;
-        }
-        data.val = result;
-        data.axis = 0;
-        xQueueSend(xQueueAdc, &data, portMAX_DELAY);
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-}
-
-void uart_task(void *p) {
-    command data;
-
-    while (1) {
-        if (xQueueReceive(xQueueAdc, &data, portMAX_DELAY) == pdTRUE) {
-            write_package(data);
-        }
-    }
-}
-
 
 int main() {
     stdio_init_all();
@@ -240,19 +244,16 @@ int main() {
     gpio_set_irq_enabled(JS_U, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
     gpio_set_irq_enabled(JS_R, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
     gpio_set_irq_enabled(JS_D, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
-    
 
-    printf("Start bluetooth task\n");
+    xQueueBtn = xQueueCreate(32, sizeof(btn_t));
+    xQueueAdc = xQueueCreate(32, sizeof(adc_t));
 
-    xTaskCreate(hc06_task, "UART_Task 1", 4096, NULL, 1, NULL);
+
+    xTaskCreate(hc05_task, "UART_Task 1", 4096, NULL, 1, NULL);
     xTaskCreate(uart_task, "uart_task", 4096, NULL, 1, NULL);
+    xTaskCreate(adc_task, "adc_task", 4096, NULL, 1, NULL);
+    // xTaskCreate(adc_y_task, "adc_task2", 4096, NULL, 1, NULL);
 
-    xQueueAdc = xQueueCreate(32, sizeof(command));
-    xTaskCreate(adc_x_task, "adc_task", 4096, NULL, 1, NULL);
-    xTaskCreate(adc_y_task, "adc_task2", 4096, NULL, 1, NULL);
-
-    xQueueBtn = xQueueCreate(32, sizeof(command));
-    xTaskCreate(btn_task, "btn_task", 4096, NULL, 1, NULL);
 
     vTaskStartScheduler();
 

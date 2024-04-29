@@ -1,7 +1,9 @@
 import serial
 import uinput
 
-ser = serial.Serial('/dev/ttyACM0', 115200)
+ser = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
+ser.flushInput()
+
 
 
 # Create new mouse device
@@ -64,7 +66,7 @@ try:
 
         elif data[0] == 1:
             print("Keyboard data")
-            key = data[1]
+            key = chr(data[1])
             status = data[2]
             print(f"Key: {key}")
             print(f"Status: {status}")
@@ -82,6 +84,9 @@ try:
                     keyboard.emit(uinput.KEY_LEFTCTRL, status)
             elif key == 'y':
                     keyboard.emit(uinput.KEY_LEFTSHIFT, status)
+
+        else:
+             print(data)
 
 except KeyboardInterrupt:
     print("Program terminated by user")
