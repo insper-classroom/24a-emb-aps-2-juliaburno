@@ -57,32 +57,32 @@ void uart_task(void *p) {
             int msb = val >> 8;
             int lsb = val & 0xFF ;
 
-            /*          uart_putc_raw(hc05_UART_ID, 0);
+            uart_putc_raw(hc05_UART_ID, 0);
             uart_putc_raw(hc05_UART_ID, adc.axis);
             uart_putc_raw(hc05_UART_ID, lsb);
             uart_putc_raw(hc05_UART_ID, msb);
-            uart_putc_raw(hc05_UART_ID, -1); */
+            uart_putc_raw(hc05_UART_ID, -1);
 
-            uart_putc_raw(uart0, 0);
+/*             uart_putc_raw(uart0, 0);
             uart_putc_raw(uart0, adc.axis);
             uart_putc_raw(uart0, lsb);
             uart_putc_raw(uart0, msb);
-            uart_putc_raw(uart0, -1);
+            uart_putc_raw(uart0, -1); */
         }
         if(xQueueReceive(xQueueBtn, &btn, portMAX_DELAY) == pdTRUE){
 
 
-            /*          uart_putc_raw(hc05_UART_ID, 0);
-            uart_putc_raw(hc05_UART_ID, data.axis);
-            uart_putc_raw(hc05_UART_ID, lsb);
-            uart_putc_raw(hc05_UART_ID, msb);
-            uart_putc_raw(hc05_UART_ID, -1); */
+            uart_putc_raw(hc05_UART_ID, 0);
+            uart_putc_raw(hc05_UART_ID, btn.ID);
+            uart_putc_raw(hc05_UART_ID, btn.status);
+            uart_putc_raw(hc05_UART_ID, 0);
+            uart_putc_raw(hc05_UART_ID, -1);
 
-            uart_putc_raw(uart0, 1);
+/*             uart_putc_raw(uart0, 1);
             uart_putc_raw(uart0, btn.ID);
             uart_putc_raw(uart0, btn.status);
             uart_putc_raw(uart0, 0);
-            uart_putc_raw(uart0, -1); 
+            uart_putc_raw(uart0, -1);  */
         }
     }
 }
