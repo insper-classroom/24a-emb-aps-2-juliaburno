@@ -45,48 +45,6 @@ void hc05_task(void *p) {
     }
 }
 
-void uart_task(void *p) {
-    adc_t adc;
-    btn_t btn;
-
-    while (1) {
-        if (xQueueReceive(xQueueAdc, &adc, portMAX_DELAY) == pdTRUE) {
-
-            int val = adc.val;
-            int msb = val >> 8;
-            int lsb = val & 0xFF ;
-
-            uart_putc_raw(hc05_UART_ID, 0);
-            uart_putc_raw(hc05_UART_ID, adc.axis);
-            uart_putc_raw(hc05_UART_ID, lsb);
-            uart_putc_raw(hc05_UART_ID, msb);
-            uart_putc_raw(hc05_UART_ID, -1);
-
-/*             uart_putc_raw(uart0, 0);
-            uart_putc_raw(uart0, adc.axis);
-            uart_putc_raw(uart0, lsb);
-            uart_putc_raw(uart0, msb);
-            uart_putc_raw(uart0, -1); */
-        }
-        if(xQueueReceive(xQueueBtn, &btn, portMAX_DELAY) == pdTRUE){
-
-
-            uart_putc_raw(hc05_UART_ID, 0);
-            uart_putc_raw(hc05_UART_ID, btn.ID);
-            uart_putc_raw(hc05_UART_ID, btn.status);
-            uart_putc_raw(hc05_UART_ID, 0);
-            uart_putc_raw(hc05_UART_ID, -1);
-
-/*             uart_putc_raw(uart0, 1);
-            uart_putc_raw(uart0, btn.ID);
-            uart_putc_raw(uart0, btn.status);
-            uart_putc_raw(uart0, 0);
-            uart_putc_raw(uart0, -1);  */
-        }
-    }
-}
-
-
 /* BUTTON RELATED */
 typedef struct btn{
 
@@ -229,6 +187,47 @@ void adc_task(void *p){
             xQueueSend(xQueueAdc, &adc_data_y, 1);
 
         vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
+void uart_task(void *p) {
+    adc_t data1;
+    btn_t data2;
+
+    while (1) {
+        if (xQueueReceive(xQueueAdc, &data1, portMAX_DELAY) == pdTRUE) {
+
+            int val = data1.val;
+            int msb = val >> 8;
+            int lsb = val & 0xFF ;
+
+            uart_putc_raw(hc05_UART_ID, 0);
+            uart_putc_raw(hc05_UART_ID, data1.axis);
+            uart_putc_raw(hc05_UART_ID, lsb);
+            uart_putc_raw(hc05_UART_ID, msb);
+            uart_putc_raw(hc05_UART_ID, -1);
+
+/*             uart_putc_raw(uart0, 0);
+            uart_putc_raw(uart0, adc.axis);
+            uart_putc_raw(uart0, lsb);
+            uart_putc_raw(uart0, msb);
+            uart_putc_raw(uart0, -1); */
+        }
+        if(xQueueReceive(xQueueBtn, &data2, portMAX_DELAY) == pdTRUE){
+
+
+            uart_putc_raw(hc05_UART_ID, 0);
+            uart_putc_raw(hc05_UART_ID, data2.ID);
+            uart_putc_raw(hc05_UART_ID, data2.status);
+            uart_putc_raw(hc05_UART_ID, 0);
+            uart_putc_raw(hc05_UART_ID, -1);
+
+/*             uart_putc_raw(uart0, 1);
+            uart_putc_raw(uart0, btn.ID);
+            uart_putc_raw(uart0, btn.status);
+            uart_putc_raw(uart0, 0);
+            uart_putc_raw(uart0, -1);  */
+        }
     }
 }
 
