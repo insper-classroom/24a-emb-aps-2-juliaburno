@@ -46,7 +46,6 @@ void hc05_task(void *p) {
 }
 
 void uart_task(void *p) {
-    btn_init();
     adc_t adc;
     btn_t btn;
 
@@ -235,6 +234,7 @@ void adc_task(void *p){
 
 int main() {
     stdio_init_all();
+    btn_init();
 
     gpio_set_irq_enabled_with_callback(BTN_R, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &btn_callback);
     gpio_set_irq_enabled(BTN_G, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
