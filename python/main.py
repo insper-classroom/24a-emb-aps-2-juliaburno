@@ -73,11 +73,11 @@ try:
             print(f"Status: {status}")
             if key == 'w':
                     keyboard.emit(uinput.KEY_W, status)
-            elif key == 'a':
+            if key == 'a':
                     keyboard.emit(uinput.KEY_A, status)
-            elif key == 's':
+            if key == 's':
                     keyboard.emit(uinput.KEY_S, status)
-            elif key == 'd':
+            if key == 'd':
                     keyboard.emit(uinput.KEY_D, status)
             elif key == 'g':
                     keyboard.emit(uinput.KEY_SPACE, status)

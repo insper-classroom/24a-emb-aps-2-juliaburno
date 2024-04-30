@@ -90,9 +90,12 @@ QueueHandle_t xQueueBtn;
 
 
 void btn_callback(uint gpio, uint32_t events) {
-    btn_t btn;
-    if (events == 0x4)  btn.status=1;
-    else if (events == 0x8) btn.status=0; 
+    struct btn btn;
+    if (events == 0x4)  
+    btn.status=1;
+
+    else if (events == 0x8) 
+    btn.status=0; 
 
     if (gpio==BTN_R) {
         btn.ID='r';
