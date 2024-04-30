@@ -34,14 +34,10 @@ void hc05_task(void *p) {
     gpio_set_function(hc05_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(hc05_RX_PIN, GPIO_FUNC_UART);
     hc05_init("JuliaBurno", "1234");
-    gpio_init(hc05_PIN);
-    gpio_set_dir(hc05_PIN, GPIO_IN);
 
     while(true){
-        if (gpio_get(hc05_PIN) == 1) {
-            //Ascender LED
-            break;
-        }
+            uart_puts(hc05_UART_ID, "OLA");
+            vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
@@ -90,12 +86,9 @@ QueueHandle_t xQueueBtn;
 
 
 void btn_callback(uint gpio, uint32_t events) {
-    struct btn btn;
-    if (events == 0x4)  
-    btn.status=1;
-
-    else if (events == 0x8) 
-    btn.status=0; 
+    btn_t btn;
+    if (events == 0x4)  btn.status=1;
+    else if (events == 0x8) btn.status=0; 
 
     if (gpio==BTN_R) {
         btn.ID='r';
@@ -198,38 +191,47 @@ void uart_task(void *p) {
     btn_t data2;
 
     while (1) {
-        if (xQueueReceive(xQueueAdc, &data1, portMAX_DELAY) == pdTRUE) {
+        if (xQueueReceive(xQueueAdc, &data1, 10) == pdTRUE) {
 
             int val = data1.val;
             int msb = val >> 8;
             int lsb = val & 0xFF ;
 
-            uart_putc_raw(hc05_UART_ID, 0);
+/*             uart_putc_raw(hc05_UART_ID, 0);
             uart_putc_raw(hc05_UART_ID, data1.axis);
             uart_putc_raw(hc05_UART_ID, lsb);
             uart_putc_raw(hc05_UART_ID, msb);
-            uart_putc_raw(hc05_UART_ID, -1);
+            uart_putc_raw(hc05_UART_ID, -1); */
 
-/*             uart_putc_raw(uart0, 0);
-            uart_putc_raw(uart0, adc.axis);
+            uart_putc_raw(uart0, 0);
+            uart_putc_raw(uart0, data1.axis);
             uart_putc_raw(uart0, lsb);
             uart_putc_raw(uart0, msb);
-            uart_putc_raw(uart0, -1); */
+            uart_putc_raw(uart0, -1);
         }
-        if(xQueueReceive(xQueueBtn, &data2, portMAX_DELAY) == pdTRUE){
+        if(xQueueReceive(xQueueBtn, &data2, 10) == pdTRUE){
 
 
-            uart_putc_raw(hc05_UART_ID, 0);
+/*             uart_putc_raw(hc05_UART_ID, 0);
             uart_putc_raw(hc05_UART_ID, data2.ID);
             uart_putc_raw(hc05_UART_ID, data2.status);
             uart_putc_raw(hc05_UART_ID, 0);
-            uart_putc_raw(hc05_UART_ID, -1);
+            uart_putc_raw(hc05_UART_ID, -1); */
 
-/*             uart_putc_raw(uart0, 1);
-            uart_putc_raw(uart0, btn.ID);
-            uart_putc_raw(uart0, btn.status);
+            uart_putc_raw(uart0, 1);
+            uart_putc_raw(uart0, data2.ID);
+            uart_putc_raw(uart0, data2.status);
             uart_putc_raw(uart0, 0);
-            uart_putc_raw(uart0, -1);  */
+            uart_putc_raw(uart0, -1); 
+
+            vTaskDelay(10);
+             uart_putc_raw(uart0, 1);
+            uart_putc_raw(uart0, data2.ID);
+            uart_putc_raw(uart0, data2.status);
+            uart_putc_raw(uart0, 0);
+            uart_putc_raw(uart0, -1); 
+
+
         }
     }
 }
@@ -248,7 +250,7 @@ int main() {
     gpio_set_irq_enabled(JS_D, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
 
     xQueueBtn = xQueueCreate(32, sizeof(btn_t));
-    xQueueAdc = xQueueCreate(32, sizeof(adc_t));
+    xQueueAdc = xQueueCreate(4, sizeof(adc_t));
 
 
     xTaskCreate(hc05_task, "UART_Task 1", 4096, NULL, 1, NULL);

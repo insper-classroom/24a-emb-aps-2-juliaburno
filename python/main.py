@@ -1,8 +1,8 @@
 import serial
 import uinput
 
-# ser = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
-ser = serial.Serial('/dev/rfcomm0', 115200, timeout=10)
+ser = serial.Serial('/dev/ttyACM0', 115200, timeout=10)
+#ser = serial.Serial('/dev/rfcomm0', 115200, timeout=10)
 ser.flushInput()
 
 
@@ -79,11 +79,11 @@ try:
                     keyboard.emit(uinput.KEY_S, status)
             if key == 'd':
                     keyboard.emit(uinput.KEY_D, status)
-            elif key == 'g':
+            if key == 'g':
                     keyboard.emit(uinput.KEY_SPACE, status)
-            elif key == 'b':
+            if key == 'b':
                     keyboard.emit(uinput.KEY_LEFTCTRL, status)
-            elif key == 'y':
+            if key == 'y':
                     keyboard.emit(uinput.KEY_LEFTSHIFT, status)
 
         else:
